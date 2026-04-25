@@ -1,0 +1,26 @@
+{
+  "name": "argota-site",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@astrojs/rss": "^4.0.7",
+    "@astrojs/sitemap": "^3.2.1",
+    "@notionhq/client": "^2.2.15",
+    "astro": "^4.16.0",
+    "notion-to-md": "^3.1.6",
+    "typescript": "^5.6.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.5"
+  }
+}

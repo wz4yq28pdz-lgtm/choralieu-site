@@ -1,0 +1,5 @@
+# Cloudflare Pages config for Argota.
+# Used by `wrangler pages deploy` and (optionally) by the Pages dashboard.
+name = "argota"
+compatibility_date = "2024-10-01"
+pages_build_output_dir = "dist"

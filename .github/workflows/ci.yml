@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches-ignore: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run check --if-present
+      - name: Build (without Notion secrets)
+        run: npm run build
+        env:
+          # Build is expected to succeed even without Notion configured —
+          # the site falls back to empty content.
+          SITE_URL: https://argota.example.com

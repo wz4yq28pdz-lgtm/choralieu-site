@@ -1,0 +1,33 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getPosts, notionConfigured } from '../../lib/notion';
+
+let posts: Awaited<ReturnType<typeof getPosts>> = [];
+if (notionConfigured()) {
+  try {
+    posts = await getPosts();
+  } catch (err) {
+    console.warn('[notion] getPosts failed:', (err as Error).message);
+  }
+}
+---
+<Base title="Blog — Argota" description="All posts on Argota.">
+  <h1>Blog</h1>
+  {posts.length === 0 ? (
+    <p class="meta">No posts yet.</p>
+  ) : (
+    <ul class="post-list">
+      {posts.map((p) => (
+        <li>
+          <a href={`/blog/${p.slug}/`}>{p.title}</a>
+          {p.publishedAt && (
+            <div class="meta">
+              {new Date(p.publishedAt).toLocaleDateString()}
+            </div>
+          )}
+          {p.summary && <p class="summary">{p.summary}</p>}
+        </li>
+      ))}
+    </ul>
+  )}
+</Base>

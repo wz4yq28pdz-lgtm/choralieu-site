@@ -1,0 +1,29 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getPosts, notionConfigured } from '../../lib/notion';
+import { renderMarkdown } from '../../lib/markdown';
+
+export async function getStaticPaths() {
+  if (!notionConfigured()) return [];
+  const posts = await getPosts();
+  return posts.map((p) => ({
+    params: { slug: p.slug },
+    props: { post: p },
+  }));
+}
+
+const { post } = Astro.props as {
+  post: Awaited<ReturnType<typeof getPosts>>[number];
+};
+const html = renderMarkdown(post.markdown);
+---
+<Base title={`${post.title} — Argota`} description={post.summary}>
+  <article>
+    <h1>{post.title}</h1>
+    <div class="meta">
+      {post.publishedAt && new Date(post.publishedAt).toLocaleDateString()}
+      {post.tags?.length ? ` · ${post.tags.join(', ')}` : ''}
+    </div>
+    <div set:html={html} />
+  </article>
+</Base>

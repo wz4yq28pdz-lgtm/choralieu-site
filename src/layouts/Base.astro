@@ -1,0 +1,47 @@
+---
+import '../styles/global.css';
+
+export interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title = 'Argota', description = 'Argota — a small site.' } =
+  Astro.props as Props;
+
+const siteUrl = import.meta.env.SITE_URL || 'https://argota.example.com';
+const canonical = new URL(Astro.url.pathname, siteUrl).toString();
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:type" content="website" />
+  </head>
+  <body>
+    <header class="site">
+      <div class="inner">
+        <a href="/" class="brand">Argota</a>
+        <nav>
+          <a href="/">Home</a>
+          <a href="/blog/">Blog</a>
+          <a href="/about/">About</a>
+        </nav>
+      </div>
+    </header>
+    <main>
+      <slot />
+    </main>
+    <footer class="site">
+      <div>© {new Date().getFullYear()} Argota</div>
+    </footer>
+  </body>
+</html>
