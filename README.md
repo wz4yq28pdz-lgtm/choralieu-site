@@ -85,13 +85,12 @@ Required GitHub repository secrets:
 
 | Secret                      | Where to get it                                  |
 | --------------------------- | ------------------------------------------------ |
-| `CLOUDFLARE_API_TOKEN`      | Cloudflare dashboard → My Profile → API Tokens   |
-| `CLOUDFLARE_ACCOUNT_ID`     | Cloudflare dashboard → right sidebar             |
-| `CLOUDFLARE_PAGES_PROJECT`  | Name of the Pages project (e.g. `argota`)        |
-| `NOTION_TOKEN`              | Notion integration secret                        |
-| `NOTION_DATABASE_ID`        | Notion database ID (pages)                       |
-| `NOTION_POSTS_DATABASE_ID`  | Notion database ID (posts) — optional            |
-| `ANTHROPIC_API_KEY`         | Reserved for future build-time content steps     |
+| `CLOUDFLARE_API_TOKEN`  | Cloudflare dashboard → My Profile → API Tokens (Pages: Edit + User Details: Read) |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare dashboard → right sidebar                                             |
+| `NOTION_API_KEY`        | Notion integration secret (`secret_...`)                                         |
+| `NOTION_PUBLIC_DB_ID`   | Notion database ID for public pages                                              |
+| `NOTION_PRIVATE_DB_ID`  | Notion database ID for posts                                                     |
+| `ANTHROPIC_API_KEY`     | Reserved for future build-time content steps                                     |
 
 If you'd rather have Cloudflare build the project itself, point Pages at this repo with build command `npm run build` and output dir `dist`, then delete `.github/workflows/deploy.yml`.
 

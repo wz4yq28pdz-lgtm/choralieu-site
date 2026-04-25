@@ -28,13 +28,20 @@ function env(name: string): string | undefined {
 }
 
 function notionToken(): string | undefined {
-  return env('NOTION_TOKEN');
+  // Project standard is NOTION_API_KEY; legacy NOTION_TOKEN is accepted as fallback.
+  return env('NOTION_API_KEY') ?? env('NOTION_TOKEN');
 }
 function pagesDbId(): string | undefined {
-  return env('NOTION_DATABASE_ID');
+  // Public DB holds static pages (e.g. About). Falls back to legacy name.
+  return env('NOTION_PUBLIC_DB_ID') ?? env('NOTION_DATABASE_ID');
 }
 function postsDbId(): string | undefined {
-  return env('NOTION_POSTS_DATABASE_ID') ?? pagesDbId();
+  // Private DB holds posts. Falls back to legacy name, then to pages DB.
+  return (
+    env('NOTION_PRIVATE_DB_ID') ??
+    env('NOTION_POSTS_DATABASE_ID') ??
+    pagesDbId()
+  );
 }
 function statusFilter(): string | undefined {
   // Empty string disables the filter; unset defaults to "Published".
