@@ -20,12 +20,12 @@ if (notionConfigured()) {
       {posts.map((p) => (
         <li>
           <a href={`/blog/${p.slug}/`}>{p.title}</a>
-          {p.publishedAt && (
+          {p.lastEdited && (
             <div class="meta">
-              {new Date(p.publishedAt).toLocaleDateString()}
+              {new Date(p.lastEdited).toLocaleDateString()}
             </div>
           )}
-          {p.summary && <p class="summary">{p.summary}</p>}
+          {p.excerpt && <p class="summary">{p.excerpt}</p>}
         </li>
       ))}
     </ul>

@@ -20,7 +20,8 @@
  * never throws, even when secrets are missing.
  */
 import { Client } from '@notionhq/client';
-// @ts-expect-error - notion-to-md ships loose types
+// notion-to-md may or may not have its own types; treat as loose.
+// @ts-ignore
 import { NotionToMarkdown } from 'notion-to-md';
 
 function env(name: string): string | undefined {
