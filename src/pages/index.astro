@@ -12,12 +12,12 @@ if (notionConfigured()) {
 }
 const recent = posts.slice(0, 5);
 ---
-<Base title="Argota" description="Welcome to Argota.">
-  <h1>Argota</h1>
+<Base title="Choralieu" description="Welcome to Choralieu.">
+  <h1>Choralieu</h1>
   <p>
     A small site, scaffolded and ready to grow. Edit <code>src/pages/index.astro</code>
     to make this your own. Content below is pulled from Notion when
-    <code>NOTION_TOKEN</code> and <code>NOTION_DATABASE_ID</code> are set.
+    <code>NOTION_API_KEY</code> and <code>NOTION_PUBLIC_DB_ID</code> are set.
   </p>
 
   {recent.length > 0 ? (
@@ -27,15 +27,15 @@ const recent = posts.slice(0, 5);
         {recent.map((p) => (
           <li>
             <a href={`/blog/${p.slug}/`}>{p.title}</a>
-            {p.summary && <p class="summary">{p.summary}</p>}
+            {p.excerpt && <p class="summary">{p.excerpt}</p>}
           </li>
         ))}
       </ul>
     </>
   ) : (
     <p class="meta">
-      No Notion content yet. Set <code>NOTION_TOKEN</code> and{' '}
-      <code>NOTION_DATABASE_ID</code> in <code>.env</code>, then re-run the build.
+      No Notion content yet. Set <code>NOTION_API_KEY</code> and{' '}
+      <code>NOTION_PUBLIC_DB_ID</code> in <code>.env</code>, then re-run the build.
     </p>
   )}
 </Base>

@@ -6,10 +6,10 @@ export interface Props {
   description?: string;
 }
 
-const { title = 'Argota', description = 'Argota — a small site.' } =
+const { title = 'Choralieu', description = 'Choralieu — a small site.' } =
   Astro.props as Props;
 
-const siteUrl = import.meta.env.SITE_URL || 'https://argota.example.com';
+const siteUrl = import.meta.env.SITE_URL || 'https://choralieu.pages.dev';
 const canonical = new URL(Astro.url.pathname, siteUrl).toString();
 ---
 <!doctype html>
@@ -29,7 +29,7 @@ const canonical = new URL(Astro.url.pathname, siteUrl).toString();
   <body>
     <header class="site">
       <div class="inner">
-        <a href="/" class="brand">Argota</a>
+        <a href="/" class="brand">Choralieu</a>
         <nav>
           <a href="/">Home</a>
           <a href="/blog/">Blog</a>
@@ -41,7 +41,7 @@ const canonical = new URL(Astro.url.pathname, siteUrl).toString();
       <slot />
     </main>
     <footer class="site">
-      <div>© {new Date().getFullYear()} Argota</div>
+      <div>© {new Date().getFullYear()} Choralieu</div>
     </footer>
   </body>
 </html>

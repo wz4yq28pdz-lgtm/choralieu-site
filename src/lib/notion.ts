@@ -1,61 +1,68 @@
 /**
- * Notion CMS client.
+ * Notion CMS client for Choralieu.
  *
- * Fetches pages from a Notion database and converts them to Markdown
- * via notion-to-md, returning a normalized shape the site can render.
+ * Pulls posts from the public and private "Posts" databases and converts
+ * each page body to Markdown via notion-to-md.
  *
- * Expected database properties (rename to match your DB or adjust below):
- *   - Title       (title)
- *   - Slug        (rich_text)
- *   - Status      (select)        e.g. Draft / Published
- *   - PublishedAt (date)
- *   - Summary     (rich_text)
- *   - Tags        (multi_select)
+ * Real DB schema (verified against the live workspace):
+ *   - Title          (title)
+ *   - Slug           (rich_text)        URL-safe slug
+ *   - Status         (select)           Draft | Published
+ *   - Visibility     (select)           Public | Gated-Full | Gated-Preview | Internal-Only
+ *   - Audience       (select)           Everyone | Members | Collaborators
+ *   - Excerpt        (rich_text)        Card / RSS summary
+ *   - Cover Image URL (url)
+ *   - Tags           (multi_select)
+ *   - Created Date   (created_time)     auto
+ *   - Last Edited    (last_edited_time) auto, used for sort order
  *
  * All env vars are read lazily inside functions so importing this module
- * never throws, even when secrets are missing (e.g. CI builds without
- * Notion configured fall through to empty results).
+ * never throws, even when secrets are missing.
  */
 import { Client } from '@notionhq/client';
 // @ts-expect-error - notion-to-md ships loose types
 import { NotionToMarkdown } from 'notion-to-md';
 
 function env(name: string): string | undefined {
-  // Server-only secrets: prefer process.env. import.meta.env is build-time
-  // inlined and won't reflect runtime/CI values for non-PUBLIC_ vars.
   const v = process.env[name];
   return v && v.length > 0 ? v : undefined;
 }
 
 function notionToken(): string | undefined {
-  // Project standard is NOTION_API_KEY; legacy NOTION_TOKEN is accepted as fallback.
   return env('NOTION_API_KEY') ?? env('NOTION_TOKEN');
 }
-function pagesDbId(): string | undefined {
-  // Public DB holds static pages (e.g. About). Falls back to legacy name.
+function publicDbId(): string | undefined {
   return env('NOTION_PUBLIC_DB_ID') ?? env('NOTION_DATABASE_ID');
 }
-function postsDbId(): string | undefined {
-  // Private DB holds posts. Falls back to legacy name, then to pages DB.
-  return (
-    env('NOTION_PRIVATE_DB_ID') ??
-    env('NOTION_POSTS_DATABASE_ID') ??
-    pagesDbId()
-  );
+function privateDbId(): string | undefined {
+  return env('NOTION_PRIVATE_DB_ID') ?? env('NOTION_POSTS_DATABASE_ID');
 }
 function statusFilter(): string | undefined {
-  // Empty string disables the filter; unset defaults to "Published".
   const raw = process.env.NOTION_STATUS_FILTER;
   if (raw === undefined) return 'Published';
   return raw === '' ? undefined : raw;
 }
 
+export type Visibility =
+  | 'Public'
+  | 'Gated-Full'
+  | 'Gated-Preview'
+  | 'Internal-Only';
+
+export type Audience = 'Everyone' | 'Members' | 'Collaborators';
+
 export interface NotionEntry {
   id: string;
   slug: string;
   title: string;
-  summary: string;
-  publishedAt: string | null;
+  excerpt: string;
+  /** Auto-set last-edited timestamp; used as the post's effective publish date. */
+  lastEdited: string | null;
+  /** Auto-set creation timestamp. */
+  createdAt: string | null;
+  visibility: Visibility | null;
+  audience: Audience | null;
+  coverImageUrl: string | null;
   tags: string[];
   markdown: string;
 }
@@ -65,7 +72,7 @@ function client(): Client {
   const token = notionToken();
   if (!token) {
     throw new Error(
-      'NOTION_TOKEN is not set. Copy .env.example to .env and fill it in.',
+      'NOTION_API_KEY is not set. Copy .env.example to .env and fill it in.',
     );
   }
   if (!_client) _client = new Client({ auth: token });
@@ -107,22 +114,30 @@ async function queryDatabase(databaseId: string): Promise<NotionEntry[]> {
       database_id: databaseId,
       start_cursor: cursor,
       filter,
-      sorts: [{ property: 'PublishedAt', direction: 'descending' }],
+      // 'Last Edited' is the auto-timestamp column on these DBs.
+      sorts: [{ property: 'Last Edited', direction: 'descending' }],
     });
     results.push(...resp.results);
     cursor = resp.has_more ? resp.next_cursor : undefined;
   } while (cursor);
 
-  // Fetch page bodies in parallel — sequential awaits make this 5-10× slower
-  // for typical post counts.
+  // Fetch page bodies in parallel.
   const raw = await Promise.all(
     results.map(async (page) => {
       const props = page.properties ?? {};
       const title = plainText(props.Title?.title) || 'Untitled';
       const slugRaw = plainText(props.Slug?.rich_text);
       const baseSlug = slugRaw ? slugify(slugRaw) : slugify(title);
-      const summary = plainText(props.Summary?.rich_text);
-      const publishedAt = props.PublishedAt?.date?.start ?? null;
+      const excerpt = plainText(props.Excerpt?.rich_text);
+      const lastEdited = props['Last Edited']?.last_edited_time ?? null;
+      const createdAt = props['Created Date']?.created_time ?? null;
+      const visibility = (props.Visibility?.select?.name ?? null) as
+        | Visibility
+        | null;
+      const audience = (props.Audience?.select?.name ?? null) as
+        | Audience
+        | null;
+      const coverImageUrl = props['Cover Image URL']?.url ?? null;
       const tags: string[] = (props.Tags?.multi_select ?? []).map(
         (t: any) => t.name,
       );
@@ -131,18 +146,21 @@ async function queryDatabase(databaseId: string): Promise<NotionEntry[]> {
         id: page.id,
         baseSlug,
         title,
-        summary,
-        publishedAt,
+        excerpt,
+        lastEdited,
+        createdAt,
+        visibility,
+        audience,
+        coverImageUrl,
         tags,
         markdown,
       };
     }),
   );
 
-  // Dedupe slugs deterministically. Astro's getStaticPaths throws on
-  // duplicates, so we suffix collisions with -2, -3, … in query order.
+  // Dedupe slugs deterministically. Astro's getStaticPaths throws on duplicates.
   const seen = new Set<string>();
-  const entries: NotionEntry[] = raw.map((r) => {
+  return raw.map((r) => {
     let slug = r.baseSlug || r.id;
     if (seen.has(slug)) {
       let n = 2;
@@ -157,38 +175,46 @@ async function queryDatabase(databaseId: string): Promise<NotionEntry[]> {
       id: r.id,
       slug,
       title: r.title,
-      summary: r.summary,
-      publishedAt: r.publishedAt,
+      excerpt: r.excerpt,
+      lastEdited: r.lastEdited,
+      createdAt: r.createdAt,
+      visibility: r.visibility,
+      audience: r.audience,
+      coverImageUrl: r.coverImageUrl,
       tags: r.tags,
       markdown: r.markdown,
     };
   });
-
-  return entries;
 }
 
-// Per-build cache so multiple pages (index, blog, RSS, [slug]) share one query.
-let _postsCache: Promise<NotionEntry[]> | null = null;
-let _pagesCache: Promise<NotionEntry[]> | null = null;
+// Per-build promise cache (one query per DB, shared across pages).
+let _publicCache: Promise<NotionEntry[]> | null = null;
+let _privateCache: Promise<NotionEntry[]> | null = null;
 
-export function getPages(): Promise<NotionEntry[]> {
-  const id = pagesDbId();
+/** Posts from the public DB. Renders site-wide. */
+export function getPublicPosts(): Promise<NotionEntry[]> {
+  const id = publicDbId();
   if (!id) return Promise.resolve([]);
-  if (!_pagesCache) _pagesCache = queryDatabase(id);
-  return _pagesCache;
+  if (!_publicCache) _publicCache = queryDatabase(id);
+  return _publicCache;
 }
 
-export function getPosts(): Promise<NotionEntry[]> {
-  const id = postsDbId();
+/** Posts from the private DB. Render only on gated routes. */
+export function getPrivatePosts(): Promise<NotionEntry[]> {
+  const id = privateDbId();
   if (!id) return Promise.resolve([]);
-  if (!_postsCache) _postsCache = queryDatabase(id);
-  return _postsCache;
+  if (!_privateCache) _privateCache = queryDatabase(id);
+  return _privateCache;
 }
 
-/**
- * Returns true if Notion env vars are configured. Useful for skipping
- * Notion-backed routes during local dev when no token is present.
- */
+// Backwards-compatible aliases for the existing pages.
+// `getPosts` → public DB (the main blog feed).
+// `getPages` → kept for the old "static pages" call site; for now points at
+// public posts. Wire to a dedicated DB later if needed.
+export const getPosts = getPublicPosts;
+export const getPages = getPublicPosts;
+
+/** True when a Notion token and at least one DB ID are configured. */
 export function notionConfigured(): boolean {
-  return Boolean(notionToken() && pagesDbId());
+  return Boolean(notionToken() && (publicDbId() || privateDbId()));
 }

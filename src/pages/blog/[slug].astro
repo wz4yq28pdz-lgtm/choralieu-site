@@ -17,13 +17,16 @@ const { post } = Astro.props as {
 };
 const html = renderMarkdown(post.markdown);
 ---
-<Base title={`${post.title} — Argota`} description={post.summary}>
+<Base title={`${post.title} — Choralieu`} description={post.excerpt}>
   <article>
     <h1>{post.title}</h1>
     <div class="meta">
-      {post.publishedAt && new Date(post.publishedAt).toLocaleDateString()}
+      {post.lastEdited && new Date(post.lastEdited).toLocaleDateString()}
       {post.tags?.length ? ` · ${post.tags.join(', ')}` : ''}
     </div>
+    {post.coverImageUrl && (
+      <img src={post.coverImageUrl} alt="" style="max-width:100%;border-radius:8px;margin-bottom:1.5rem;" />
+    )}
     <div set:html={html} />
   </article>
 </Base>
