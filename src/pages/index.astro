@@ -12,12 +12,17 @@ if (notionConfigured()) {
 }
 const recent = posts.slice(0, 5);
 ---
-<Base title="Choralieu" description="Welcome to Choralieu.">
+<Base title="Choralieu" description="Choralieu is a public field notebook for creative work, systems thinking, and long-form reflection.">
   <h1>Choralieu</h1>
+
   <p>
-    A small site, scaffolded and ready to grow. Edit <code>src/pages/index.astro</code>
-    to make this your own. Content below is pulled from Notion when
-    <code>NOTION_API_KEY</code> and <code>NOTION_PUBLIC_DB_ID</code> are set.
+    Choralieu is a public field notebook for creative work, systems thinking,
+    and long-form reflection.
+  </p>
+
+  <p>
+    Essays, project notes, and updates are published here from the Choralieu
+    Notion workspace.
   </p>
 
   {recent.length > 0 ? (
