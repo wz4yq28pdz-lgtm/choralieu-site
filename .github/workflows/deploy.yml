@@ -33,7 +33,6 @@ jobs:
           NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
           NOTION_PUBLIC_DB_ID: ${{ secrets.NOTION_PUBLIC_DB_ID }}
           NOTION_PRIVATE_DB_ID: ${{ secrets.NOTION_PRIVATE_DB_ID }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           SITE_URL: ${{ vars.SITE_URL }}
         run: npm run build
 
