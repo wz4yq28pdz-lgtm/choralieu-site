@@ -110,17 +110,28 @@ async function queryDatabase(databaseId: string): Promise<NotionEntry[]> {
 
   const results: any[] = [];
   let cursor: string | undefined;
-  do {
-    const resp: any = await client().databases.query({
-      database_id: databaseId,
-      start_cursor: cursor,
-      filter,
-      // 'Last Edited' is the auto-timestamp column on these DBs.
-      sorts: [{ property: 'Last Edited', direction: 'descending' }],
-    });
-    results.push(...resp.results);
-    cursor = resp.has_more ? resp.next_cursor : undefined;
-  } while (cursor);
+  try {
+    do {
+      const resp: any = await client().databases.query({
+        database_id: databaseId,
+        start_cursor: cursor,
+        filter,
+        // 'Last Edited' is the auto-timestamp column on these DBs.
+        sorts: [{ property: 'Last Edited', direction: 'descending' }],
+      });
+      results.push(...resp.results);
+      cursor = resp.has_more ? resp.next_cursor : undefined;
+    } while (cursor);
+  } catch (err) {
+    // Degrade gracefully (e.g. the source database was deleted/unshared)
+    // instead of failing the entire static build. Blog routes will simply
+    // render with zero posts until the source is restored.
+    console.warn(
+      `[notion] queryDatabase(${databaseId}) failed, continuing with 0 posts:`,
+      (err as Error).message,
+    );
+    return [];
+  }
 
   // Fetch page bodies in parallel.
   const raw = await Promise.all(
