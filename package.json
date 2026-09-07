@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "astro build && cp production/index.html production/reserve.html production/room.png production/table.jpg production/gathering.png dist/",
+    "build": "astro build && cp production/index.html production/reserve.html production/room.png production/table.jpg production/gathering.jpg dist/",
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check"
